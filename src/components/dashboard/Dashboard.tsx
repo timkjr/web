@@ -65,6 +65,8 @@ function Kpi({
 }
 
 function RepoCard({ r }: { r: Repo }) {
+  const router = useRouter()
+  const set = useTweaks((s) => s.set)
   const kinds = [
     { label: 'functions',  value: r.funcs,      color: 'var(--k-function)' },
     { label: 'methods',    value: r.methods,    color: 'var(--k-method)' },
@@ -72,8 +74,25 @@ function RepoCard({ r }: { r: Repo }) {
     { label: 'interfaces', value: r.interfaces, color: 'var(--k-interface)' },
     { label: 'variables',  value: r.vars,       color: 'var(--k-variable)' },
   ]
+  const drillIn = () => {
+    set('scope', 'single')
+    set('activeRepo', r.id)
+    router.push('/graph')
+  }
   return (
-    <div className="repo-card">
+    <div
+      className="repo-card"
+      style={{ cursor: 'pointer' }}
+      role="button"
+      tabIndex={0}
+      onClick={drillIn}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          drillIn()
+        }
+      }}
+    >
       <div className="repo-hd">
         <span style={{ background: r.color, width: 6, height: 18, borderRadius: 2, display: 'inline-block' }} />
         <div>
@@ -314,6 +333,7 @@ export function Dashboard() {
   const router = useRouter()
   const { data, loading, error, refetch } = useDashboard()
   const scope = useTweaks((s) => s.scope)
+  const activeRepo = useTweaks((s) => s.activeRepo)
   // Separate from the global workspace `scope` — this one partitions
   // the caveats card into first-party code ("yours"), test fixtures,
   // and vendored dependencies. "yours" is the default because the raw
@@ -547,12 +567,17 @@ export function Dashboard() {
             <div className="card-hd">
               <span className="ti">Repositories</span>
               <span className="mono faint" style={{ fontSize: 11 }}>
-                {snap.stats.repos} indexed · {scope === 'federated' ? 'federated' : 'single repo'} view
+                {scope === 'single' && activeRepo
+                  ? `scoped to ${activeRepo}`
+                  : `${snap.stats.repos} indexed · federated view`}
               </span>
             </div>
             <div className="card-bd" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 14 }}>
               <div className="repo-grid">
-                {snap.repos.slice(0, 6).map((r) => (
+                {(scope === 'single' && activeRepo
+                  ? snap.repos.filter((r) => r.id === activeRepo)
+                  : snap.repos.slice(0, 6)
+                ).map((r) => (
                   <RepoCard key={r.id + ':' + r.owner} r={r} />
                 ))}
               </div>

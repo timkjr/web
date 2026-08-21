@@ -98,18 +98,28 @@ function RepoFilterPanel({
 
 export function GraphView() {
   const showMinimap = useTweaks((s) => s.showMinimap)
+  const scope = useTweaks((s) => s.scope)
+  const activeRepo = useTweaks((s) => s.activeRepo)
+  const setTweak = useTweaks((s) => s.set)
   const { data: repos, loading, error } = useRepos()
   const { data: dash } = useDashboard()
-  const { data: graph, loading: graphLoading, error: graphError } = useGraph()
+  const repoList = repos ?? []
+  const effectiveRepo = scope === 'single' ? (activeRepo || repoList[0]?.id) : undefined
+  const { data: graph, loading: graphLoading, error: graphError } = useGraph(
+    effectiveRepo ? { repo: effectiveRepo } : undefined,
+  )
   const [mode, setMode] = useState<Mode>('constellation')
   const [filtered, setFiltered] = useState<Set<string>>(new Set())
   const [filterKinds, setFilterKinds] = useState<Set<string>>(new Set())
 
   useEffect(() => {
-    if (repos && filtered.size === 0) {
+    if (!repos) return
+    if (effectiveRepo) {
+      setFiltered(new Set([effectiveRepo]))
+    } else if (filtered.size === 0) {
       setFiltered(new Set(repos.map((r) => r.id)))
     }
-  }, [repos, filtered.size])
+  }, [repos, effectiveRepo, filtered.size])
 
   // Default kinds: everything except `file`. File nodes inflate the graph
   // without adding useful topology, so they start off; user can opt in.
@@ -125,7 +135,11 @@ export function GraphView() {
     else n.add(id)
     setFiltered(n)
   }
-  const only = (id: string) => setFiltered(new Set([id]))
+  const only = (id: string) => {
+    setFiltered(new Set([id]))
+    setTweak('scope', 'single')
+    setTweak('activeRepo', id)
+  }
   const toggleKind = (kind: string) => {
     const n = new Set(filterKinds)
     if (n.has(kind)) n.delete(kind)
@@ -133,7 +147,6 @@ export function GraphView() {
     setFilterKinds(n)
   }
 
-  const repoList = repos ?? []
   const visibleRepos = repoList.filter((r) => !filtered.size || filtered.has(r.id))
   const kinds = dash?.kinds ?? []
 
@@ -145,9 +158,18 @@ export function GraphView() {
           <div className="sub">
             {loading || graphLoading
               ? 'Loading graph…'
-              : `${filtered.size} of ${repoList.length} repos · ${(graph?.nodes.length ?? dash?.stats.total_nodes ?? 0).toLocaleString()} nodes · ${(graph?.edges.length ?? dash?.stats.total_edges ?? 0).toLocaleString()} edges`}
+              : effectiveRepo
+                ? `Single repo · ${effectiveRepo} · ${(graph?.nodes.length ?? 0).toLocaleString()} nodes · ${(graph?.edges.length ?? 0).toLocaleString()} edges`
+                : `${filtered.size} of ${repoList.length} repos · ${(graph?.nodes.length ?? dash?.stats.total_nodes ?? 0).toLocaleString()} nodes · ${(graph?.edges.length ?? dash?.stats.total_edges ?? 0).toLocaleString()} edges`}
           </div>
         </div>
+        {effectiveRepo && (
+          <div className="actions">
+            <button type="button" className="btn ghost" onClick={() => setTweak('scope', 'federated')}>
+              <Icon name="expand" size={11} /> Show all repos
+            </button>
+          </div>
+        )}
       </div>
       {(error || graphError) && (
         <div style={{ padding: 22, color: 'var(--danger)', fontSize: 13 }}>

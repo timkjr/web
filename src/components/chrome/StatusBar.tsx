@@ -6,6 +6,7 @@ import { useDashboard } from '@/lib/hooks'
 
 export function StatusBar() {
   const scope = useTweaks((s) => s.scope)
+  const activeRepo = useTweaks((s) => s.activeRepo)
   const { data, error } = useDashboard()
   const nodes = data?.stats.total_nodes
   const edges = data?.stats.total_edges
@@ -33,7 +34,9 @@ export function StatusBar() {
       </span>
       <span className="sep">·</span>
       <span className="seg">
-        scope <b style={{ color: 'var(--fg-0)' }}>{scope === 'federated' ? 'all repos' : 'single'}</b>
+        scope <b style={{ color: 'var(--fg-0)' }}>
+          {scope === 'federated' ? 'all repos' : activeRepo ? `single · ${activeRepo}` : 'single'}
+        </b>
       </span>
       <span className="spacer" />
       <span className="seg">{version}</span>

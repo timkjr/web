@@ -1,22 +1,47 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { Icon } from '@/components/primitives/Icon'
 import { StackedBar } from '@/components/primitives/Charts'
 import { useRepos } from '@/lib/hooks'
+import { useTweaks } from '@/lib/tweaks'
 
 export function ServicesView() {
+  const router = useRouter()
   const { data, loading, error, refetch } = useRepos()
-  const repos = data ?? []
+  const scope = useTweaks((s) => s.scope)
+  const activeRepo = useTweaks((s) => s.activeRepo)
+  const set = useTweaks((s) => s.set)
+  const allRepos = data ?? []
+  const repos = scope === 'single' && activeRepo
+    ? allRepos.filter((r) => r.id === activeRepo)
+    : allRepos
+
+  const drillIn = (id: string) => {
+    set('scope', 'single')
+    set('activeRepo', id)
+    router.push('/graph')
+  }
+
   return (
     <>
       <div className="page-hd">
         <div>
           <h1>Services</h1>
           <div className="sub">
-            {loading ? 'Loading…' : `${repos.length} indexed services · click to drill in`}
+            {loading
+              ? 'Loading…'
+              : scope === 'single' && activeRepo
+                ? `Scoped to ${activeRepo} · click to open its graph`
+                : `${repos.length} indexed services · click to drill in`}
           </div>
         </div>
         <div className="actions">
+          {scope === 'single' && activeRepo && (
+            <button type="button" className="btn ghost" onClick={() => set('scope', 'federated')}>
+              Show all
+            </button>
+          )}
           <button type="button" className="btn" onClick={refetch}>
             <Icon name="history" size={12} /> Refresh
           </button>
@@ -38,7 +63,20 @@ export function ServicesView() {
       <div style={{ padding: 18, overflow: 'auto' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 10 }}>
           {repos.map((r) => (
-            <div key={r.id + ':' + r.owner} className="card" style={{ padding: 14 }}>
+            <div
+              key={r.id + ':' + r.owner}
+              className="card"
+              style={{ padding: 14, cursor: 'pointer' }}
+              role="button"
+              tabIndex={0}
+              onClick={() => drillIn(r.id)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  drillIn(r.id)
+                }
+              }}
+            >
               <div className="hstack" style={{ gap: 8 }}>
                 <span style={{ width: 8, height: 28, borderRadius: 3, background: r.color }} />
                 <div>

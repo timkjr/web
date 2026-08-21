@@ -13,6 +13,7 @@ export type Tweaks = {
   theme: Theme
   layout: Layout
   scope: Scope
+  activeRepo: string | null
   caveats: CaveatDensity
   graphStyle: 'constellation' | 'tree' | 'sankey' | '3d'
   density: Density
@@ -23,6 +24,7 @@ const initial: Tweaks = {
   theme: 'ink',
   layout: 'tri',
   scope: 'federated',
+  activeRepo: null,
   caveats: 'inline',
   graphStyle: 'constellation',
   density: 'comfortable',
@@ -50,6 +52,7 @@ export const useTweaks = create<Store>()(
         theme: s.theme,
         layout: s.layout,
         scope: s.scope,
+        activeRepo: s.activeRepo,
         caveats: s.caveats,
         graphStyle: s.graphStyle,
         density: s.density,
