@@ -132,13 +132,15 @@ export const api = {
   },
 
   // Fetches the full step list + files for a single process. Uses the
-  // `get_processes` MCP tool with the `id` parameter so the response
-  // includes every step's node ID — list endpoints deliberately omit
-  // these to keep the summary light.
+  // `analyze` facade's `processes` kind with the `id` parameter so the
+  // response includes every step's node ID — list endpoints deliberately
+  // omit these to keep the summary light. The facade routes
+  // analyze(kind=processes) to the get_processes handler without needing
+  // the legacy tool promoted into the live registry (core/defer surface).
   processDetail: async (id: string): Promise<ProcessDetail | null> => {
     if (!id) return null
     try {
-      return await callToolJSON<ProcessDetail>('get_processes', { id })
+      return await callToolJSON<ProcessDetail>('analyze', { kind: 'processes', id })
     } catch { return null }
   },
 
