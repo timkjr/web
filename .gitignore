@@ -41,3 +41,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .gortex/
+
+# Codeman-managed agent skill (rewritten from Codeman's packaged source on
+# every session launch when the agent-skill setting is on -- not something to
+# track or hand-edit here)
+.claude/skills/codeman/
